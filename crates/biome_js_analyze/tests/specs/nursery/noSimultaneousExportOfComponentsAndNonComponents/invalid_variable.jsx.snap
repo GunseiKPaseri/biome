@@ -7,7 +7,7 @@ expression: invalid_variable.jsx
 export const SampleComponent = () => <></>
 export const test = 100
 export function hoge () {
-  return <></>
+  return 100
 } 
 
 ```
@@ -16,15 +16,15 @@ export function hoge () {
 ```
 invalid_variable.jsx:2:14 lint/nursery/noSimultaneousExportOfComponentsAndNonComponents ━━━━━━━━━━━━
 
-  ! In JSX, export only components.
+  ! Components and non-components functions are exported at the same time.
   
     1 │ export const SampleComponent = () => <></>
   > 2 │ export const test = 100
       │              ^^^^
     3 │ export function hoge () {
-    4 │   return <></>
+    4 │   return 100
   
-  i This note will give you more information.
+  i React components and regular functions must be exported in separate files.
   
 
 ```
@@ -32,16 +32,16 @@ invalid_variable.jsx:2:14 lint/nursery/noSimultaneousExportOfComponentsAndNonCom
 ```
 invalid_variable.jsx:3:17 lint/nursery/noSimultaneousExportOfComponentsAndNonComponents ━━━━━━━━━━━━
 
-  ! In JSX, export only components.
+  ! Components and non-components functions are exported at the same time.
   
     1 │ export const SampleComponent = () => <></>
     2 │ export const test = 100
   > 3 │ export function hoge () {
       │                 ^^^^
-    4 │   return <></>
+    4 │   return 100
     5 │ }·
   
-  i This note will give you more information.
+  i React components and regular functions must be exported in separate files.
   
 
 ```

@@ -9,40 +9,57 @@ const test = 100
 function hoge () {
   return 100
 }
+const piyo = 100
 
-export {SampleComponent, test, hoge}
+export {SampleComponent, test, hoge, piyo as fuga}
 
 ```
 
 # Diagnostics
 ```
-invalid_clause.jsx:7:26 lint/nursery/noSimultaneousExportOfComponentsAndNonComponents ━━━━━━━━━━━━━━
+invalid_clause.jsx:8:26 lint/nursery/noSimultaneousExportOfComponentsAndNonComponents ━━━━━━━━━━━━━━
 
-  ! In JSX, export only components.
+  ! Components and non-components functions are exported at the same time.
   
-    5 │ }
-    6 │ 
-  > 7 │ export {SampleComponent, test, hoge}
+    6 │ const piyo = 100
+    7 │ 
+  > 8 │ export {SampleComponent, test, hoge, piyo as fuga}
       │                          ^^^^
-    8 │ 
+    9 │ 
   
-  i This note will give you more information.
+  i React components and regular functions must be exported in separate files.
   
 
 ```
 
 ```
-invalid_clause.jsx:7:32 lint/nursery/noSimultaneousExportOfComponentsAndNonComponents ━━━━━━━━━━━━━━
+invalid_clause.jsx:8:32 lint/nursery/noSimultaneousExportOfComponentsAndNonComponents ━━━━━━━━━━━━━━
 
-  ! In JSX, export only components.
+  ! Components and non-components functions are exported at the same time.
   
-    5 │ }
-    6 │ 
-  > 7 │ export {SampleComponent, test, hoge}
+    6 │ const piyo = 100
+    7 │ 
+  > 8 │ export {SampleComponent, test, hoge, piyo as fuga}
       │                                ^^^^
-    8 │ 
+    9 │ 
   
-  i This note will give you more information.
+  i React components and regular functions must be exported in separate files.
+  
+
+```
+
+```
+invalid_clause.jsx:8:38 lint/nursery/noSimultaneousExportOfComponentsAndNonComponents ━━━━━━━━━━━━━━
+
+  ! Components and non-components functions are exported at the same time.
+  
+    6 │ const piyo = 100
+    7 │ 
+  > 8 │ export {SampleComponent, test, hoge, piyo as fuga}
+      │                                      ^^^^
+    9 │ 
+  
+  i React components and regular functions must be exported in separate files.
   
 
 ```
