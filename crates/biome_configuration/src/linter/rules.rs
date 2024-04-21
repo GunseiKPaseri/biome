@@ -2693,6 +2693,10 @@ pub struct Nursery {
     #[doc = "Disallow specified modules when loaded by import or require."]
     #[serde(skip_serializing_if = "Option::is_none")]
     pub no_restricted_imports: Option<RuleConfiguration<NoRestrictedImports>>,
+    #[doc = "Succinct description of the rule."]
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub no_simultaneous_export_of_components_and_non_components:
+        Option<RuleConfiguration<NoSimultaneousExportOfComponentsAndNonComponents>>,
     #[doc = "Disallow the use of dependencies that aren't specified in the package.json."]
     #[serde(skip_serializing_if = "Option::is_none")]
     pub no_undeclared_dependencies: Option<RuleConfiguration<NoUndeclaredDependencies>>,
@@ -2735,6 +2739,7 @@ impl Nursery {
         "noNodejsModules",
         "noReactSpecificProps",
         "noRestrictedImports",
+        "noSimultaneousExportOfComponentsAndNonComponents",
         "noUndeclaredDependencies",
         "useImportRestrictions",
         "useSortedClasses",
@@ -2778,6 +2783,7 @@ impl Nursery {
         RuleFilter::Rule(Self::GROUP_NAME, Self::GROUP_RULES[15]),
         RuleFilter::Rule(Self::GROUP_NAME, Self::GROUP_RULES[16]),
         RuleFilter::Rule(Self::GROUP_NAME, Self::GROUP_RULES[17]),
+        RuleFilter::Rule(Self::GROUP_NAME, Self::GROUP_RULES[18]),
     ];
     #[doc = r" Retrieves the recommended rules"]
     pub(crate) fn is_recommended_true(&self) -> bool {
@@ -2869,19 +2875,27 @@ impl Nursery {
                 index_set.insert(RuleFilter::Rule(Self::GROUP_NAME, Self::GROUP_RULES[14]));
             }
         }
-        if let Some(rule) = self.no_undeclared_dependencies.as_ref() {
+        if let Some(rule) = self
+            .no_simultaneous_export_of_components_and_non_components
+            .as_ref()
+        {
             if rule.is_enabled() {
                 index_set.insert(RuleFilter::Rule(Self::GROUP_NAME, Self::GROUP_RULES[15]));
             }
         }
-        if let Some(rule) = self.use_import_restrictions.as_ref() {
+        if let Some(rule) = self.no_undeclared_dependencies.as_ref() {
             if rule.is_enabled() {
                 index_set.insert(RuleFilter::Rule(Self::GROUP_NAME, Self::GROUP_RULES[16]));
             }
         }
-        if let Some(rule) = self.use_sorted_classes.as_ref() {
+        if let Some(rule) = self.use_import_restrictions.as_ref() {
             if rule.is_enabled() {
                 index_set.insert(RuleFilter::Rule(Self::GROUP_NAME, Self::GROUP_RULES[17]));
+            }
+        }
+        if let Some(rule) = self.use_sorted_classes.as_ref() {
+            if rule.is_enabled() {
+                index_set.insert(RuleFilter::Rule(Self::GROUP_NAME, Self::GROUP_RULES[18]));
             }
         }
         index_set
@@ -2963,19 +2977,27 @@ impl Nursery {
                 index_set.insert(RuleFilter::Rule(Self::GROUP_NAME, Self::GROUP_RULES[14]));
             }
         }
-        if let Some(rule) = self.no_undeclared_dependencies.as_ref() {
+        if let Some(rule) = self
+            .no_simultaneous_export_of_components_and_non_components
+            .as_ref()
+        {
             if rule.is_disabled() {
                 index_set.insert(RuleFilter::Rule(Self::GROUP_NAME, Self::GROUP_RULES[15]));
             }
         }
-        if let Some(rule) = self.use_import_restrictions.as_ref() {
+        if let Some(rule) = self.no_undeclared_dependencies.as_ref() {
             if rule.is_disabled() {
                 index_set.insert(RuleFilter::Rule(Self::GROUP_NAME, Self::GROUP_RULES[16]));
             }
         }
-        if let Some(rule) = self.use_sorted_classes.as_ref() {
+        if let Some(rule) = self.use_import_restrictions.as_ref() {
             if rule.is_disabled() {
                 index_set.insert(RuleFilter::Rule(Self::GROUP_NAME, Self::GROUP_RULES[17]));
+            }
+        }
+        if let Some(rule) = self.use_sorted_classes.as_ref() {
+            if rule.is_disabled() {
+                index_set.insert(RuleFilter::Rule(Self::GROUP_NAME, Self::GROUP_RULES[18]));
             }
         }
         index_set
@@ -3072,6 +3094,10 @@ impl Nursery {
                 .map(|conf| (conf.level(), conf.get_options())),
             "noRestrictedImports" => self
                 .no_restricted_imports
+                .as_ref()
+                .map(|conf| (conf.level(), conf.get_options())),
+            "noSimultaneousExportOfComponentsAndNonComponents" => self
+                .no_simultaneous_export_of_components_and_non_components
                 .as_ref()
                 .map(|conf| (conf.level(), conf.get_options())),
             "noUndeclaredDependencies" => self

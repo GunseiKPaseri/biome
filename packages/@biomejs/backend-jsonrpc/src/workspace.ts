@@ -969,6 +969,10 @@ export interface Nursery {
 	 */
 	noRestrictedImports?: RuleConfiguration_for_RestrictedImportsOptions;
 	/**
+	 * Succinct description of the rule.
+	 */
+	noSimultaneousExportOfComponentsAndNonComponents?: RuleConfiguration_for_Null;
+	/**
 	 * Disallow the use of dependencies that aren't specified in the package.json.
 	 */
 	noUndeclaredDependencies?: RuleConfiguration_for_Null;
@@ -1959,6 +1963,7 @@ export type Category =
 	| "lint/nursery/noNodejsModules"
 	| "lint/nursery/noReactSpecificProps"
 	| "lint/nursery/noRestrictedImports"
+	| "lint/nursery/noSimultaneousExportOfComponentsAndNonComponents"
 	| "lint/nursery/noTypeOnlyImportAttributes"
 	| "lint/nursery/noUndeclaredDependencies"
 	| "lint/nursery/useBiomeSuppressionComment"

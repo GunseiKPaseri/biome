@@ -125,6 +125,7 @@ define_categories! {
     "lint/nursery/noNodejsModules": "https://biomejs.dev/linter/rules/no-nodejs-modules",
     "lint/nursery/noReactSpecificProps": "https://biomejs.dev/linter/rules/no-react-specific-props",
     "lint/nursery/noRestrictedImports": "https://biomejs.dev/linter/rules/no-restricted-imports",
+    "lint/nursery/noSimultaneousExportOfComponentsAndNonComponents": "https://biomejs.dev/linter/rules/no-simultaneous-export-of-components-and-non-components",
     "lint/nursery/noTypeOnlyImportAttributes": "https://biomejs.dev/linter/rules/no-type-only-import-attributes",
     "lint/nursery/noUndeclaredDependencies": "https://biomejs.dev/linter/rules/no-undeclared-dependencies",
     "lint/nursery/useBiomeSuppressionComment": "https://biomejs.dev/linter/rules/use-biome-suppression-comment",

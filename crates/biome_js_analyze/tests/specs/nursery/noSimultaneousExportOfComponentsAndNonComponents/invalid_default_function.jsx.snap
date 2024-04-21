@@ -1,0 +1,29 @@
+---
+source: crates/biome_js_analyze/tests/spec_tests.rs
+expression: invalid_default_function.jsx
+---
+# Input
+```jsx
+export const SampleComponent = () => <></>
+export default function hoge () {
+  return 100
+} 
+
+```
+
+# Diagnostics
+```
+invalid_default_function.jsx:2:25 lint/nursery/noSimultaneousExportOfComponentsAndNonComponents ━━━━━━━━━━
+
+  ! In JSX, export only components.
+  
+    1 │ export const SampleComponent = () => <></>
+  > 2 │ export default function hoge () {
+      │                         ^^^^
+    3 │   return 100
+    4 │ }·
+  
+  i This note will give you more information.
+  
+
+```

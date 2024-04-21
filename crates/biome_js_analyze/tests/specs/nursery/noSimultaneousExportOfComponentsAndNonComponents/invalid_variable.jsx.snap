@@ -1,0 +1,47 @@
+---
+source: crates/biome_js_analyze/tests/spec_tests.rs
+expression: invalid_variable.jsx
+---
+# Input
+```jsx
+export const SampleComponent = () => <></>
+export const test = 100
+export function hoge () {
+  return <></>
+} 
+
+```
+
+# Diagnostics
+```
+invalid_variable.jsx:2:14 lint/nursery/noSimultaneousExportOfComponentsAndNonComponents ━━━━━━━━━━━━
+
+  ! In JSX, export only components.
+  
+    1 │ export const SampleComponent = () => <></>
+  > 2 │ export const test = 100
+      │              ^^^^
+    3 │ export function hoge () {
+    4 │   return <></>
+  
+  i This note will give you more information.
+  
+
+```
+
+```
+invalid_variable.jsx:3:17 lint/nursery/noSimultaneousExportOfComponentsAndNonComponents ━━━━━━━━━━━━
+
+  ! In JSX, export only components.
+  
+    1 │ export const SampleComponent = () => <></>
+    2 │ export const test = 100
+  > 3 │ export function hoge () {
+      │                 ^^^^
+    4 │   return <></>
+    5 │ }·
+  
+  i This note will give you more information.
+  
+
+```

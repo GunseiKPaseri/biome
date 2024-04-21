@@ -177,6 +177,7 @@ pub type NoSetterReturn =
 pub type NoShadowRestrictedNames = < lint :: suspicious :: no_shadow_restricted_names :: NoShadowRestrictedNames as biome_analyze :: Rule > :: Options ;
 pub type NoShoutyConstants =
     <lint::style::no_shouty_constants::NoShoutyConstants as biome_analyze::Rule>::Options;
+pub type NoSimultaneousExportOfComponentsAndNonComponents = < lint :: nursery :: no_simultaneous_export_of_components_and_non_components :: NoSimultaneousExportOfComponentsAndNonComponents as biome_analyze :: Rule > :: Options ;
 pub type NoSkippedTests =
     <lint::suspicious::no_skipped_tests::NoSkippedTests as biome_analyze::Rule>::Options;
 pub type NoSparseArray =

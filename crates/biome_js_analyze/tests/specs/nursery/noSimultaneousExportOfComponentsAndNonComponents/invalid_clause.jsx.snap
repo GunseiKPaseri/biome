@@ -1,0 +1,48 @@
+---
+source: crates/biome_js_analyze/tests/spec_tests.rs
+expression: invalid_clause.jsx
+---
+# Input
+```jsx
+const SampleComponent = () => <></>
+const test = 100
+function hoge () {
+  return 100
+}
+
+export {SampleComponent, test, hoge}
+
+```
+
+# Diagnostics
+```
+invalid_clause.jsx:7:26 lint/nursery/noSimultaneousExportOfComponentsAndNonComponents ━━━━━━━━━━━━━━
+
+  ! In JSX, export only components.
+  
+    5 │ }
+    6 │ 
+  > 7 │ export {SampleComponent, test, hoge}
+      │                          ^^^^
+    8 │ 
+  
+  i This note will give you more information.
+  
+
+```
+
+```
+invalid_clause.jsx:7:32 lint/nursery/noSimultaneousExportOfComponentsAndNonComponents ━━━━━━━━━━━━━━
+
+  ! In JSX, export only components.
+  
+    5 │ }
+    6 │ 
+  > 7 │ export {SampleComponent, test, hoge}
+      │                                ^^^^
+    8 │ 
+  
+  i This note will give you more information.
+  
+
+```

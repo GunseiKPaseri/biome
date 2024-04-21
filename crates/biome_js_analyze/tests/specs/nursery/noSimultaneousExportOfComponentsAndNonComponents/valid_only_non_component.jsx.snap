@@ -1,0 +1,12 @@
+---
+source: crates/biome_js_analyze/tests/spec_tests.rs
+expression: valid_only_non_component.jsx
+---
+# Input
+```jsx
+export const sampleConst = 100
+export function hoge () {
+  return 100
+}
+
+```

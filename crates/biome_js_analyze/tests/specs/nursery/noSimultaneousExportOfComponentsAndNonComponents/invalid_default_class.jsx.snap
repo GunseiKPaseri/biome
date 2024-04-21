@@ -1,0 +1,26 @@
+---
+source: crates/biome_js_analyze/tests/spec_tests.rs
+expression: invalid_default_class.jsx
+---
+# Input
+```jsx
+export const SampleComponent = () => <></>
+export default class hoge {
+}
+```
+
+# Diagnostics
+```
+invalid_default_class.jsx:2:22 lint/nursery/noSimultaneousExportOfComponentsAndNonComponents ━━━━━━━━━━
+
+  ! In JSX, export only components.
+  
+    1 │ export const SampleComponent = () => <></>
+  > 2 │ export default class hoge {
+      │                      ^^^^
+    3 │ }
+  
+  i This note will give you more information.
+  
+
+```
