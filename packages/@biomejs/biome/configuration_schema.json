@@ -1425,6 +1425,22 @@
 			"properties": { "allowComments": { "type": "boolean" } },
 			"additionalProperties": false
 		},
+		"NoSimultaneousExportOfComponentsAndNonComponentsConfiguration": {
+			"anyOf": [
+				{ "$ref": "#/definitions/RulePlainConfiguration" },
+				{
+					"$ref": "#/definitions/RuleWithNoSimultaneousExportOfComponentsAndNonComponentsOptions"
+				}
+			]
+		},
+		"NoSimultaneousExportOfComponentsAndNonComponentsOptions": {
+			"type": "object",
+			"properties": {
+				"ignoreConstantExport": { "type": "boolean" },
+				"ignoreExportNames": { "type": "array", "items": { "type": "string" } }
+			},
+			"additionalProperties": false
+		},
 		"Nursery": {
 			"description": "A list of rules that belong to this group",
 			"type": "object",
@@ -1539,9 +1555,11 @@
 					]
 				},
 				"noSimultaneousExportOfComponentsAndNonComponents": {
-					"description": "Succinct description of the rule.",
+					"description": "React components and regular functions must be exported in separate files. If they are being exported together, the files need to be split.",
 					"anyOf": [
-						{ "$ref": "#/definitions/RuleConfiguration" },
+						{
+							"$ref": "#/definitions/NoSimultaneousExportOfComponentsAndNonComponentsConfiguration"
+						},
 						{ "type": "null" }
 					]
 				},
@@ -1887,6 +1905,17 @@
 			"required": ["level"],
 			"properties": {
 				"level": { "$ref": "#/definitions/RulePlainConfiguration" }
+			},
+			"additionalProperties": false
+		},
+		"RuleWithNoSimultaneousExportOfComponentsAndNonComponentsOptions": {
+			"type": "object",
+			"required": ["level", "options"],
+			"properties": {
+				"level": { "$ref": "#/definitions/RulePlainConfiguration" },
+				"options": {
+					"$ref": "#/definitions/NoSimultaneousExportOfComponentsAndNonComponentsOptions"
+				}
 			},
 			"additionalProperties": false
 		},

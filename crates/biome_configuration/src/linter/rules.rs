@@ -2693,7 +2693,7 @@ pub struct Nursery {
     #[doc = "Disallow specified modules when loaded by import or require."]
     #[serde(skip_serializing_if = "Option::is_none")]
     pub no_restricted_imports: Option<RuleConfiguration<NoRestrictedImports>>,
-    #[doc = "Succinct description of the rule."]
+    #[doc = "React components and regular functions must be exported in separate files. If they are being exported together, the files need to be split."]
     #[serde(skip_serializing_if = "Option::is_none")]
     pub no_simultaneous_export_of_components_and_non_components:
         Option<RuleConfiguration<NoSimultaneousExportOfComponentsAndNonComponents>>,

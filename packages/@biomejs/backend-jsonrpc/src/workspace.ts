@@ -969,9 +969,9 @@ export interface Nursery {
 	 */
 	noRestrictedImports?: RuleConfiguration_for_RestrictedImportsOptions;
 	/**
-	 * Succinct description of the rule.
+	 * React components and regular functions must be exported in separate files. If they are being exported together, the files need to be split.
 	 */
-	noSimultaneousExportOfComponentsAndNonComponents?: RuleConfiguration_for_Null;
+	noSimultaneousExportOfComponentsAndNonComponents?: RuleConfiguration_for_NoSimultaneousExportOfComponentsAndNonComponentsOptions;
 	/**
 	 * Disallow the use of dependencies that aren't specified in the package.json.
 	 */
@@ -1529,6 +1529,9 @@ export type RuleConfiguration_for_NoCssEmptyBlockOptions =
 export type RuleConfiguration_for_RestrictedImportsOptions =
 	| RulePlainConfiguration
 	| RuleWithOptions_for_RestrictedImportsOptions;
+export type RuleConfiguration_for_NoSimultaneousExportOfComponentsAndNonComponentsOptions =
+	| RulePlainConfiguration
+	| RuleWithOptions_for_NoSimultaneousExportOfComponentsAndNonComponentsOptions;
 export type RuleConfiguration_for_UtilityClassSortingOptions =
 	| RulePlainConfiguration
 	| RuleWithOptions_for_UtilityClassSortingOptions;
@@ -1572,6 +1575,10 @@ export interface RuleWithOptions_for_NoCssEmptyBlockOptions {
 export interface RuleWithOptions_for_RestrictedImportsOptions {
 	level: RulePlainConfiguration;
 	options: RestrictedImportsOptions;
+}
+export interface RuleWithOptions_for_NoSimultaneousExportOfComponentsAndNonComponentsOptions {
+	level: RulePlainConfiguration;
+	options: NoSimultaneousExportOfComponentsAndNonComponentsOptions;
 }
 export interface RuleWithOptions_for_UtilityClassSortingOptions {
 	level: RulePlainConfiguration;
@@ -1630,6 +1637,10 @@ export interface RestrictedImportsOptions {
 	 * A list of names that should trigger the rule
 	 */
 	paths: {};
+}
+export interface NoSimultaneousExportOfComponentsAndNonComponentsOptions {
+	ignoreConstantExport: boolean;
+	ignoreExportNames: string[];
 }
 export interface UtilityClassSortingOptions {
 	/**
