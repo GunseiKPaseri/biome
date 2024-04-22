@@ -6,7 +6,7 @@
               "noSimultaneousExportOfComponentsAndNonComponents": {
                   "level": "error",
                   "options": {
-                      "ignoreExportNames": ["test"]
+                      "ignoreConstantExport": true
                   }
               }
           }

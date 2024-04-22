@@ -1,6 +1,6 @@
 ---
 source: crates/biome_js_analyze/tests/spec_tests.rs
-expression: valid_ignore_export_names.jsx
+expression: ignore_export_names.jsx
 ---
 # Input
 ```jsx
@@ -14,16 +14,15 @@ export function hoge () {
 
 # Diagnostics
 ```
-valid_ignore_export_names.jsx:3:17 lint/nursery/noSimultaneousExportOfComponentsAndNonComponents ━━━━━━━━━━
+ignore_export_names.jsx:2:14 lint/nursery/noSimultaneousExportOfComponentsAndNonComponents ━━━━━━━━━━
 
   ! Components and non-components functions are exported at the same time.
   
     1 │ export const SampleComponent = () => <></>
-    2 │ export const test = 100
-  > 3 │ export function hoge () {
-      │                 ^^^^
+  > 2 │ export const test = 100
+      │              ^^^^
+    3 │ export function hoge () {
     4 │   return 100
-    5 │ }
   
   i React components and regular functions must be exported in separate files.
   

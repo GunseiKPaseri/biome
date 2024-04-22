@@ -62,7 +62,7 @@ declare_node_union! {
 #[derive(Default)]
 struct AnyNonComponentsExportInJsxVisitor {
     has_components_exports: bool,
-    non_compontents_exports: Vec<AnyIdentifier>,
+    non_compontents_exports: Vec<ExportedItem>,
 }
 
 impl Visitor for AnyNonComponentsExportInJsxVisitor {
@@ -77,20 +77,20 @@ impl Visitor for AnyNonComponentsExportInJsxVisitor {
             WalkEvent::Enter(node) => {
                 if let Some(export) = JsExport::cast_ref(node) {
                     let x = get_exported_identifiers(&export);
-                    for export_identifier in x {
-                        let acturaucase = Case::identify(&export_identifier.text(), false);
+                    for exported_item in x {
+                        let acturaucase = Case::identify(&exported_item.identifier.text(), false);
                         if acturaucase == Case::Pascal {
                             self.has_components_exports = true;
                         } else {
-                            self.non_compontents_exports.push(export_identifier);
+                            self.non_compontents_exports.push(exported_item);
                         }
                     }
                 }
             }
             WalkEvent::Leave(node) => {
                 if AnyJsRoot::cast_ref(node).is_some() && self.has_components_exports {
-                    for export in self.non_compontents_exports.iter() {
-                        ctx.match_query(AnyNonComponentsExportInJsx(export.clone()));
+                    for exported_item in self.non_compontents_exports.iter() {
+                        ctx.match_query(AnyNonComponentsExportInJsx(exported_item.clone()));
                     }
                 }
             }
@@ -98,18 +98,18 @@ impl Visitor for AnyNonComponentsExportInJsxVisitor {
     }
 }
 
-pub struct AnyNonComponentsExportInJsx(AnyIdentifier);
+pub struct AnyNonComponentsExportInJsx(ExportedItem);
 
 impl QueryMatch for AnyNonComponentsExportInJsx {
     fn text_range(&self) -> TextRange {
-        self.0.range()
+        self.0.identifier.range()
     }
 }
 
 impl Queryable for AnyNonComponentsExportInJsx {
     type Input = Self;
     type Language = JsLanguage;
-    type Output = AnyIdentifier;
+    type Output = ExportedItem;
     type Services = ();
 
     fn build_visitor(
@@ -145,12 +145,18 @@ impl Rule for NoSimultaneousExportOfComponentsAndNonComponents {
     type Options = NoSimultaneousExportOfComponentsAndNonComponentsOptions;
 
     fn run(ctx: &RuleContext<Self>) -> Self::Signals {
-        let export_identifier = ctx.query();
-        if !ctx
+        let exported_item = ctx.query();
+        let is_export_name_queryable = !ctx
             .options()
             .ignore_export_names
-            .contains(&export_identifier.text())
-        {
+            .contains(&exported_item.identifier.text());
+        let is_export_value_queryable = !(ctx.options().ignore_constant_export
+            && exported_item
+                .exported
+                .clone()
+                .map(|expr| is_literal(expr))
+                .unwrap_or(false));
+        if is_export_name_queryable && is_export_value_queryable {
             Some(())
         } else {
             None
@@ -166,7 +172,7 @@ impl Rule for NoSimultaneousExportOfComponentsAndNonComponents {
         Some(
             RuleDiagnostic::new(
                 rule_category!(),
-                node.range(),
+                node.identifier.range(),
                 markup! {
                     "Components and non-components functions are exported at the same time."
                 },
@@ -178,11 +184,18 @@ impl Rule for NoSimultaneousExportOfComponentsAndNonComponents {
     }
 }
 
-fn get_exported_identifiers(export: &JsExport) -> Vec<AnyIdentifier> {
+#[derive(Clone)]
+pub struct ExportedItem {
+    identifier: AnyIdentifier,
+    exported: Option<AnyJsExpression>,
+}
+
+fn get_exported_identifiers(export: &JsExport) -> Vec<ExportedItem> {
     export
         .export_clause()
         .ok()
         .and_then(|export_clause| match export_clause {
+            // export const x = 100;
             AnyJsExportClause::AnyJsDeclarationClause(declaration_clause) => {
                 match declaration_clause {
                     AnyJsDeclarationClause::JsVariableDeclarationClause(
@@ -197,20 +210,29 @@ fn get_exported_identifiers(export: &JsExport) -> Vec<AnyIdentifier> {
                                     .into_iter()
                                     .filter_map(|declarator| {
                                         declarator.ok().and_then(|declarator| {
-                                            declarator
-                                                .id()
-                                                .ok()
-                                                .map(AnyIdentifier::AnyJsBindingPattern)
+                                            declarator.id().ok().map(|id| ExportedItem {
+                                                identifier: AnyIdentifier::AnyJsBindingPattern(id),
+                                                exported: declarator.initializer().and_then(
+                                                    |initializer_clause| {
+                                                        initializer_clause.expression().ok()
+                                                    },
+                                                ),
+                                            })
                                         })
                                     })
                                     .collect()
                             })
                     }
                     AnyJsDeclarationClause::JsFunctionDeclaration(function_declaration_clause) => {
-                        function_declaration_clause
-                            .id()
-                            .ok()
-                            .map(|function_id| vec![AnyIdentifier::AnyJsBinding(function_id); 1])
+                        function_declaration_clause.id().ok().map(|function_id| {
+                            vec![
+                                ExportedItem {
+                                    identifier: AnyIdentifier::AnyJsBinding(function_id),
+                                    exported: None,
+                                };
+                                1
+                            ]
+                        })
                     }
                     _ => None,
                 }
@@ -220,28 +242,57 @@ fn get_exported_identifiers(export: &JsExport) -> Vec<AnyIdentifier> {
                     .declaration()
                     .ok()
                     .and_then(|default_declation| match default_declation {
+                        // export default function x() {}
                         AnyJsExportDefaultDeclaration::JsFunctionExportDefaultDeclaration(
                             function_declaration,
-                        ) => function_declaration
-                            .id()
-                            .map(|function_id| vec![AnyIdentifier::AnyJsBinding(function_id); 1]),
+                        ) => function_declaration.id(),
+                        // export default class x {}
                         AnyJsExportDefaultDeclaration::JsClassExportDefaultDeclaration(
                             class_declaration,
-                        ) => class_declaration
-                            .id()
-                            .map(|class_id| vec![AnyIdentifier::AnyJsBinding(class_id); 1]),
+                        ) => class_declaration.id(),
                         _ => None,
                     })
+                    .map(|any_js_binding| {
+                        vec![
+                            ExportedItem {
+                                identifier: AnyIdentifier::AnyJsBinding(any_js_binding),
+                                exported: None,
+                            };
+                            1
+                        ]
+                    })
             }
+            // export default x;
             AnyJsExportClause::JsExportDefaultExpressionClause(clause) => clause
                 .expression()
                 .ok()
                 .and_then(|expression| match expression {
-                    AnyJsExpression::JsIdentifierExpression(identifier) => {
-                        Some(vec![AnyIdentifier::JsIdentifierExpression(identifier); 1])
-                    }
+                    AnyJsExpression::JsIdentifierExpression(identifier) => Some(vec![
+                        ExportedItem {
+                            identifier: AnyIdentifier::JsIdentifierExpression(identifier),
+                            exported: None,
+                        };
+                        1
+                    ]),
+                    // AnyJsExpression::JsFunctionExpression(function_expression) => {
+                    //     function_expression
+                    //         .id()
+                    //         .map(|function_id| vec![ExportedItem{
+                    //             identifier: AnyIdentifier::AnyJsBinding(function_id),
+                    //             exported: Some(AnyJsExpression::JsFunctionExpression(function_expression)),
+                    //         }; 1])
+                    // },
+                    // AnyJsExpression::JsClassExpression(class_expression) => {
+                    //     class_expression
+                    //         .id()
+                    //         .map(|class_id| vec![ExportedItem{
+                    //             identifier: AnyIdentifier::AnyJsBinding(class_id),
+                    //             exported: Some(AnyJsExpression::JsClassExpression(class_expression)),
+                    //         }; 1])
+                    // },
                     _ => None,
                 }),
+            // export { x, y, z };
             AnyJsExportClause::JsExportNamedClause(named_clause) => Some(
                 named_clause
                     .specifiers()
@@ -256,17 +307,27 @@ fn get_exported_identifiers(export: &JsExport) -> Vec<AnyIdentifier> {
                                 .ok()
                                 .map(AnyIdentifier::JsReferenceIdentifier),
                             AnyJsExportNamedSpecifier::JsExportNamedSpecifier(specifier) => {
-                                specifier.exported_name().ok().map(AnyIdentifier::JsLiteralExportName)
+                                specifier
+                                    .exported_name()
+                                    .ok()
+                                    .map(AnyIdentifier::JsLiteralExportName)
                             }
                         }
-                        // export_specifier
-                        //     .local_name()
-                        //     .ok()
-                        //     .map(|identifier| AnyIdentifier::JsReferenceIdentifier(identifier))
+                        .map(|any_identifier| ExportedItem {
+                            identifier: any_identifier,
+                            exported: None,
+                        })
                     })
                     .collect(),
             ),
             _ => None,
         })
         .unwrap_or_default()
+}
+
+fn is_literal(expr: AnyJsExpression) -> bool {
+    match expr {
+        AnyJsExpression::AnyJsLiteralExpression(_) => true,
+        _ => false,
+    }
 }
