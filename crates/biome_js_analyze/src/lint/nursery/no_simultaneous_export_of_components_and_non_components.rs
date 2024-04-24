@@ -7,9 +7,9 @@ use biome_analyze::{
 use biome_console::markup;
 use biome_deserialize_macros::Deserializable;
 use biome_js_syntax::{
-    AnyJsBinding, AnyJsBindingPattern, AnyJsDeclarationClause, AnyJsExportClause,
+    AnyJsBinding, AnyJsBindingPattern, AnyJsDeclarationClause, AnyJsExportClause, 
     AnyJsExportDefaultDeclaration, AnyJsExportNamedSpecifier, AnyJsExpression, AnyJsRoot, JsExport,
-    JsIdentifierExpression, JsLanguage, JsLiteralExportName, JsReferenceIdentifier,
+    JsIdentifierExpression, JsLanguage, JsLiteralExportName, JsReferenceIdentifier, TsIdentifierBinding, AnyTsType, TsEnumDeclaration
 };
 use biome_rowan::declare_node_union;
 use biome_rowan::{AstNode, Language, TextRange, WalkEvent};
@@ -19,9 +19,10 @@ use Iterator;
 
 declare_rule! {
     /// React components and regular functions must be exported in separate files.
+    /// This is necessary to enable the Fast Refresh feature, which streamlines development.
     /// If they are being exported together, the files need to be split.
     ///
-    /// [TODO]Add a link to the corresponding ESLint rule (if any):
+    /// https://www.npmjs.com/package/eslint-plugin-react-refresh
     ///
     /// ## Examples
     ///
@@ -47,7 +48,6 @@ declare_rule! {
     ///   return 100
     /// }
     /// ```
-    ///
     pub NoSimultaneousExportOfComponentsAndNonComponents {
         version: "next",
         name: "noSimultaneousExportOfComponentsAndNonComponents",
@@ -56,7 +56,7 @@ declare_rule! {
 }
 
 declare_node_union! {
-    pub AnyIdentifier = JsReferenceIdentifier | AnyJsBindingPattern | AnyJsBinding | JsIdentifierExpression | JsLiteralExportName
+    pub AnyIdentifier = JsReferenceIdentifier | AnyJsBindingPattern | AnyJsBinding | JsIdentifierExpression | JsLiteralExportName | TsIdentifierBinding
 }
 
 #[derive(Default)]
@@ -76,10 +76,17 @@ impl Visitor for AnyNonComponentsExportInJsxVisitor {
         match event {
             WalkEvent::Enter(node) => {
                 if let Some(export) = JsExport::cast_ref(node) {
-                    let x = get_exported_identifiers(&export);
+                    let x = get_exported_items(&export);
                     for exported_item in x {
+                        if let Some(AnyJsExported::AnyTsType(_)) = exported_item.exported {
+                            continue;
+                        }
                         let acturaucase = Case::identify(&exported_item.identifier.text(), false);
-                        if acturaucase == Case::Pascal {
+                        let is_component = acturaucase == Case::Pascal && match exported_item.exported.clone() {
+                            Some(exported) => is_maybe_react_component(exported),
+                            None => true,
+                        };
+                        if is_component {
                             self.has_components_exports = true;
                         } else {
                             self.non_compontents_exports.push(exported_item);
@@ -154,7 +161,10 @@ impl Rule for NoSimultaneousExportOfComponentsAndNonComponents {
             && exported_item
                 .exported
                 .clone()
-                .map(|expr| is_literal(expr))
+                .map(|partof| match partof {
+                    AnyJsExported::AnyJsExpression(expr) => is_literal(expr),
+                    _ => false,
+                })
                 .unwrap_or(false));
         if is_export_name_queryable && is_export_value_queryable {
             Some(())
@@ -184,13 +194,17 @@ impl Rule for NoSimultaneousExportOfComponentsAndNonComponents {
     }
 }
 
+declare_node_union! {
+    pub AnyJsExported = AnyJsExpression | AnyJsExportClause | AnyTsType | TsEnumDeclaration
+}
+
 #[derive(Clone)]
 pub struct ExportedItem {
     identifier: AnyIdentifier,
-    exported: Option<AnyJsExpression>,
+    exported: Option<AnyJsExported>,
 }
 
-fn get_exported_identifiers(export: &JsExport) -> Vec<ExportedItem> {
+fn get_exported_items(export: &JsExport) -> Vec<ExportedItem> {
     export
         .export_clause()
         .ok()
@@ -216,7 +230,7 @@ fn get_exported_identifiers(export: &JsExport) -> Vec<ExportedItem> {
                                                     |initializer_clause| {
                                                         initializer_clause.expression().ok()
                                                     },
-                                                ),
+                                                ).map(AnyJsExported::AnyJsExpression),
                                             })
                                         })
                                     })
@@ -229,12 +243,23 @@ fn get_exported_identifiers(export: &JsExport) -> Vec<ExportedItem> {
                                 ExportedItem {
                                     identifier: AnyIdentifier::AnyJsBinding(function_id),
                                     exported: None,
-                                };
-                                1
+                                }
                             ]
                         })
                     }
-                    _ => None,
+                    AnyJsDeclarationClause::TsEnumDeclaration(ts_enum_declaration) => {
+                        ts_enum_declaration.id().ok().map(|enum_id| vec![ExportedItem {
+                            identifier: AnyIdentifier::AnyJsBinding(enum_id),
+                            exported: Some(AnyJsExported::TsEnumDeclaration(ts_enum_declaration)),
+                        }])
+                    },
+                    AnyJsDeclarationClause::TsTypeAliasDeclaration(ts_type_alias_declaration) => {
+                        ts_type_alias_declaration.binding_identifier().ok().map(|type_alias_id| vec![ExportedItem {
+                            identifier: AnyIdentifier::TsIdentifierBinding(type_alias_id),
+                            exported: ts_type_alias_declaration.ty().ok().map(AnyJsExported::AnyTsType),
+                        }])
+                    },
+                    _ => None
                 }
             }
             AnyJsExportClause::JsExportDefaultDeclarationClause(default_declaration_clause) => {
@@ -257,8 +282,7 @@ fn get_exported_identifiers(export: &JsExport) -> Vec<ExportedItem> {
                             ExportedItem {
                                 identifier: AnyIdentifier::AnyJsBinding(any_js_binding),
                                 exported: None,
-                            };
-                            1
+                            }
                         ]
                     })
             }
@@ -271,25 +295,8 @@ fn get_exported_identifiers(export: &JsExport) -> Vec<ExportedItem> {
                         ExportedItem {
                             identifier: AnyIdentifier::JsIdentifierExpression(identifier),
                             exported: None,
-                        };
-                        1
+                        }
                     ]),
-                    // AnyJsExpression::JsFunctionExpression(function_expression) => {
-                    //     function_expression
-                    //         .id()
-                    //         .map(|function_id| vec![ExportedItem{
-                    //             identifier: AnyIdentifier::AnyJsBinding(function_id),
-                    //             exported: Some(AnyJsExpression::JsFunctionExpression(function_expression)),
-                    //         }; 1])
-                    // },
-                    // AnyJsExpression::JsClassExpression(class_expression) => {
-                    //     class_expression
-                    //         .id()
-                    //         .map(|class_id| vec![ExportedItem{
-                    //             identifier: AnyIdentifier::AnyJsBinding(class_id),
-                    //             exported: Some(AnyJsExpression::JsClassExpression(class_expression)),
-                    //         }; 1])
-                    // },
                     _ => None,
                 }),
             // export { x, y, z };
@@ -328,6 +335,15 @@ fn get_exported_identifiers(export: &JsExport) -> Vec<ExportedItem> {
 fn is_literal(expr: AnyJsExpression) -> bool {
     match expr {
         AnyJsExpression::AnyJsLiteralExpression(_) => true,
+        AnyJsExpression::JsBinaryExpression(_) => true,
+        AnyJsExpression::JsTemplateExpression(template_expression) => template_expression.tag().is_none(),
         _ => false,
+    }
+}
+
+fn is_maybe_react_component(any_exported: AnyJsExported) -> bool {
+    match any_exported {
+        AnyJsExported::TsEnumDeclaration(_) => false,
+        _ => true,
     }
 }

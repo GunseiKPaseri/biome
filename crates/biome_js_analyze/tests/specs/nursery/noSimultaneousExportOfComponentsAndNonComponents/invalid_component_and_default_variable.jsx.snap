@@ -1,6 +1,6 @@
 ---
 source: crates/biome_js_analyze/tests/spec_tests.rs
-expression: invalid_default_variable.jsx
+expression: invalid_component_and_default_variable.jsx
 ---
 # Input
 ```jsx
@@ -11,7 +11,7 @@ export default hoge
 
 # Diagnostics
 ```
-invalid_default_variable.jsx:3:16 lint/nursery/noSimultaneousExportOfComponentsAndNonComponents ━━━━━━━━━━
+invalid_component_and_default_variable.jsx:3:16 lint/nursery/noSimultaneousExportOfComponentsAndNonComponents ━━━━━━━━━━
 
   ! Components and non-components functions are exported at the same time.
   
