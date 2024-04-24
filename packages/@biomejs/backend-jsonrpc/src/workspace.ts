@@ -969,7 +969,7 @@ export interface Nursery {
 	 */
 	noRestrictedImports?: RuleConfiguration_for_RestrictedImportsOptions;
 	/**
-	 * React components and regular functions must be exported in separate files. If they are being exported together, the files need to be split.
+	 * React components and regular functions must be exported in separate files. This is necessary to enable the Fast Refresh feature, which streamlines development. If they are being exported together, the files need to be split.
 	 */
 	noSimultaneousExportOfComponentsAndNonComponents?: RuleConfiguration_for_NoSimultaneousExportOfComponentsAndNonComponentsOptions;
 	/**

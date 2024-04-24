@@ -6,12 +6,8 @@ use biome_analyze::{
 };
 use biome_console::markup;
 use biome_deserialize_macros::Deserializable;
-use biome_js_syntax::{
-    AnyJsBinding, AnyJsBindingPattern, AnyJsDeclarationClause, AnyJsExportClause, 
-    AnyJsExportDefaultDeclaration, AnyJsExportNamedSpecifier, AnyJsExpression, AnyJsRoot, JsExport,
-    JsIdentifierExpression, JsLanguage, JsLiteralExportName, JsReferenceIdentifier, TsIdentifierBinding, AnyTsType, TsEnumDeclaration
-};
-use biome_rowan::declare_node_union;
+use biome_js_syntax::export_ext::{AnyJsExported, ExportedItem};
+use biome_js_syntax::{AnyJsExpression, AnyJsRoot, JsExport, JsLanguage};
 use biome_rowan::{AstNode, Language, TextRange, WalkEvent};
 use biome_string_case::Case;
 use serde::{Deserialize, Serialize};
@@ -55,10 +51,6 @@ declare_rule! {
     }
 }
 
-declare_node_union! {
-    pub AnyIdentifier = JsReferenceIdentifier | AnyJsBindingPattern | AnyJsBinding | JsIdentifierExpression | JsLiteralExportName | TsIdentifierBinding
-}
-
 #[derive(Default)]
 struct AnyNonComponentsExportInJsxVisitor {
     has_components_exports: bool,
@@ -76,16 +68,16 @@ impl Visitor for AnyNonComponentsExportInJsxVisitor {
         match event {
             WalkEvent::Enter(node) => {
                 if let Some(export) = JsExport::cast_ref(node) {
-                    let x = get_exported_items(&export);
-                    for exported_item in x {
+                    for exported_item in export.get_exported_items() {
                         if let Some(AnyJsExported::AnyTsType(_)) = exported_item.exported {
                             continue;
                         }
                         let acturaucase = Case::identify(&exported_item.identifier.text(), false);
-                        let is_component = acturaucase == Case::Pascal && match exported_item.exported.clone() {
-                            Some(exported) => is_maybe_react_component(exported),
-                            None => true,
-                        };
+                        let is_component = acturaucase == Case::Pascal
+                            && match exported_item.exported.clone() {
+                                Some(exported) => is_maybe_react_component(exported),
+                                None => true,
+                            };
                         if is_component {
                             self.has_components_exports = true;
                         } else {
@@ -194,149 +186,13 @@ impl Rule for NoSimultaneousExportOfComponentsAndNonComponents {
     }
 }
 
-declare_node_union! {
-    pub AnyJsExported = AnyJsExpression | AnyJsExportClause | AnyTsType | TsEnumDeclaration
-}
-
-#[derive(Clone)]
-pub struct ExportedItem {
-    identifier: AnyIdentifier,
-    exported: Option<AnyJsExported>,
-}
-
-fn get_exported_items(export: &JsExport) -> Vec<ExportedItem> {
-    export
-        .export_clause()
-        .ok()
-        .and_then(|export_clause| match export_clause {
-            // export const x = 100;
-            AnyJsExportClause::AnyJsDeclarationClause(declaration_clause) => {
-                match declaration_clause {
-                    AnyJsDeclarationClause::JsVariableDeclarationClause(
-                        variable_declaration_clause,
-                    ) => {
-                        variable_declaration_clause
-                            .declaration()
-                            .ok()
-                            .map(|variable_declaration| {
-                                variable_declaration
-                                    .declarators()
-                                    .into_iter()
-                                    .filter_map(|declarator| {
-                                        declarator.ok().and_then(|declarator| {
-                                            declarator.id().ok().map(|id| ExportedItem {
-                                                identifier: AnyIdentifier::AnyJsBindingPattern(id),
-                                                exported: declarator.initializer().and_then(
-                                                    |initializer_clause| {
-                                                        initializer_clause.expression().ok()
-                                                    },
-                                                ).map(AnyJsExported::AnyJsExpression),
-                                            })
-                                        })
-                                    })
-                                    .collect()
-                            })
-                    }
-                    AnyJsDeclarationClause::JsFunctionDeclaration(function_declaration_clause) => {
-                        function_declaration_clause.id().ok().map(|function_id| {
-                            vec![
-                                ExportedItem {
-                                    identifier: AnyIdentifier::AnyJsBinding(function_id),
-                                    exported: None,
-                                }
-                            ]
-                        })
-                    }
-                    AnyJsDeclarationClause::TsEnumDeclaration(ts_enum_declaration) => {
-                        ts_enum_declaration.id().ok().map(|enum_id| vec![ExportedItem {
-                            identifier: AnyIdentifier::AnyJsBinding(enum_id),
-                            exported: Some(AnyJsExported::TsEnumDeclaration(ts_enum_declaration)),
-                        }])
-                    },
-                    AnyJsDeclarationClause::TsTypeAliasDeclaration(ts_type_alias_declaration) => {
-                        ts_type_alias_declaration.binding_identifier().ok().map(|type_alias_id| vec![ExportedItem {
-                            identifier: AnyIdentifier::TsIdentifierBinding(type_alias_id),
-                            exported: ts_type_alias_declaration.ty().ok().map(AnyJsExported::AnyTsType),
-                        }])
-                    },
-                    _ => None
-                }
-            }
-            AnyJsExportClause::JsExportDefaultDeclarationClause(default_declaration_clause) => {
-                default_declaration_clause
-                    .declaration()
-                    .ok()
-                    .and_then(|default_declation| match default_declation {
-                        // export default function x() {}
-                        AnyJsExportDefaultDeclaration::JsFunctionExportDefaultDeclaration(
-                            function_declaration,
-                        ) => function_declaration.id(),
-                        // export default class x {}
-                        AnyJsExportDefaultDeclaration::JsClassExportDefaultDeclaration(
-                            class_declaration,
-                        ) => class_declaration.id(),
-                        _ => None,
-                    })
-                    .map(|any_js_binding| {
-                        vec![
-                            ExportedItem {
-                                identifier: AnyIdentifier::AnyJsBinding(any_js_binding),
-                                exported: None,
-                            }
-                        ]
-                    })
-            }
-            // export default x;
-            AnyJsExportClause::JsExportDefaultExpressionClause(clause) => clause
-                .expression()
-                .ok()
-                .and_then(|expression| match expression {
-                    AnyJsExpression::JsIdentifierExpression(identifier) => Some(vec![
-                        ExportedItem {
-                            identifier: AnyIdentifier::JsIdentifierExpression(identifier),
-                            exported: None,
-                        }
-                    ]),
-                    _ => None,
-                }),
-            // export { x, y, z };
-            AnyJsExportClause::JsExportNamedClause(named_clause) => Some(
-                named_clause
-                    .specifiers()
-                    .into_iter()
-                    .filter_map(|r| r.ok())
-                    .filter_map(|export_specifier| {
-                        match export_specifier {
-                            AnyJsExportNamedSpecifier::JsExportNamedShorthandSpecifier(
-                                shorthand,
-                            ) => shorthand
-                                .name()
-                                .ok()
-                                .map(AnyIdentifier::JsReferenceIdentifier),
-                            AnyJsExportNamedSpecifier::JsExportNamedSpecifier(specifier) => {
-                                specifier
-                                    .exported_name()
-                                    .ok()
-                                    .map(AnyIdentifier::JsLiteralExportName)
-                            }
-                        }
-                        .map(|any_identifier| ExportedItem {
-                            identifier: any_identifier,
-                            exported: None,
-                        })
-                    })
-                    .collect(),
-            ),
-            _ => None,
-        })
-        .unwrap_or_default()
-}
-
 fn is_literal(expr: AnyJsExpression) -> bool {
     match expr {
         AnyJsExpression::AnyJsLiteralExpression(_) => true,
         AnyJsExpression::JsBinaryExpression(_) => true,
-        AnyJsExpression::JsTemplateExpression(template_expression) => template_expression.tag().is_none(),
+        AnyJsExpression::JsTemplateExpression(template_expression) => {
+            template_expression.tag().is_none()
+        }
         _ => false,
     }
 }

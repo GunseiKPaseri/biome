@@ -1555,7 +1555,7 @@
 					]
 				},
 				"noSimultaneousExportOfComponentsAndNonComponents": {
-					"description": "React components and regular functions must be exported in separate files. If they are being exported together, the files need to be split.",
+					"description": "React components and regular functions must be exported in separate files. This is necessary to enable the Fast Refresh feature, which streamlines development. If they are being exported together, the files need to be split.",
 					"anyOf": [
 						{
 							"$ref": "#/definitions/NoSimultaneousExportOfComponentsAndNonComponentsConfiguration"
