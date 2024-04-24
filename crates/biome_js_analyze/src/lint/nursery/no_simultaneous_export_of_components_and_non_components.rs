@@ -137,6 +137,8 @@ pub struct NoSimultaneousExportOfComponentsAndNonComponentsOptions {
     ignore_constant_export: bool,
 }
 
+const JSX_FILE_EXT: [&str; 2] = [".jsx", ".tsx"];
+
 impl Rule for NoSimultaneousExportOfComponentsAndNonComponents {
     type Query = AnyNonComponentsExportInJsx;
     type State = ();
@@ -144,6 +146,10 @@ impl Rule for NoSimultaneousExportOfComponentsAndNonComponents {
     type Options = NoSimultaneousExportOfComponentsAndNonComponentsOptions;
 
     fn run(ctx: &RuleContext<Self>) -> Self::Signals {
+        let file_name = ctx.file_path().file_name()?.to_str()?;
+        if !JSX_FILE_EXT.iter().any(|ext| file_name.ends_with(ext)) {
+            return None;
+        }
         let exported_item = ctx.query();
         let is_export_name_queryable = !ctx
             .options()
