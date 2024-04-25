@@ -1,0 +1,26 @@
+---
+source: crates/biome_js_analyze/tests/spec_tests.rs
+expression: invalid_anonymous_function_return.js
+---
+# Input
+```jsx
+export default foo(bar)
+
+```
+
+# Diagnostics
+```
+invalid_anonymous_function_return.js:1:1 lint/nursery/noAnonymousDefaultExport ━━━━━━━━━━━━━━━━━━━━━
+
+  ! Avoid anonymous default exports. (call expression)
+  
+  > 1 │ export default foo(bar)
+      │ ^^^^^^^^^^^^^^^^^^^^^^^
+    2 │ 
+  
+  i Anonymous exports inhibit naming consistency in code.
+  
+  i It is necessary to assign to a variable instead.
+  
+
+```

@@ -909,6 +909,10 @@ export interface Nursery {
 	 */
 	all?: boolean;
 	/**
+	 * Disallow anonymous default exports.
+	 */
+	noAnonymousDefaultExport?: RuleConfiguration_for_Null;
+	/**
 	 * WIP: This rule hasn't been implemented yet.
 	 */
 	noColorInvalidHex?: RuleConfiguration_for_Null;
@@ -1944,6 +1948,7 @@ export type Category =
 	| "lint/correctness/useValidForDirection"
 	| "lint/correctness/useYield"
 	| "lint/nursery/colorNoInvalidHex"
+	| "lint/nursery/noAnonymousDefaultExport"
 	| "lint/nursery/noColorInvalidHex"
 	| "lint/nursery/noConsole"
 	| "lint/nursery/noConstantMathMinMaxClamp"

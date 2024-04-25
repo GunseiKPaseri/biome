@@ -1,0 +1,10 @@
+---
+source: crates/biome_js_analyze/tests/spec_tests.rs
+expression: valid_const.js
+---
+# Input
+```jsx
+const foo = 123
+export default foo
+
+```

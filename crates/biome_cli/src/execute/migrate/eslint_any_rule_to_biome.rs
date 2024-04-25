@@ -365,6 +365,16 @@ pub(crate) fn migrate_eslint_any_rule(
                 .get_or_insert(Default::default());
             rule.set_level(rule_severity.into());
         }
+        "import/no-anonymous-default-export" => {
+            if !options.include_nursery {
+                return false;
+            }
+            let group = rules.nursery.get_or_insert_with(Default::default);
+            let rule = group
+                .no_anonymous_default_export
+                .get_or_insert(Default::default());
+            rule.set_level(rule_severity.into());
+        }
         "import/no-default-export" => {
             let group = rules.style.get_or_insert_with(Default::default);
             let rule = group.no_default_export.get_or_insert(Default::default());

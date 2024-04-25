@@ -1,0 +1,26 @@
+---
+source: crates/biome_js_analyze/tests/spec_tests.rs
+expression: invalid_anonymous_class.js
+---
+# Input
+```jsx
+export default class {}
+
+```
+
+# Diagnostics
+```
+invalid_anonymous_class.js:1:1 lint/nursery/noAnonymousDefaultExport ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+  ! Avoid anonymous default exports. (anonymous class)
+  
+  > 1 │ export default class {}
+      │ ^^^^^^^^^^^^^^^^^^^^^^^
+    2 │ 
+  
+  i Anonymous exports inhibit naming consistency in code.
+  
+  i It is necessary to use a named class instead.
+  
+
+```
